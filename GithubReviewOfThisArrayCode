@@ -1,0 +1,154 @@
+Summary
+- This header implements fixed-size, compile-time multidimensional arrays by nesting a 1D array template (A1D). A2D/A3D/A4D are A1D specializations that nest inner A1D types so that a[0][1][2] works.
+- It follows an old CUJ article design; it uses template non-type parameters for sizes and (attempts to) expose the number of dimensions.
+
+What the code does correctly
+- Provides compile-time fixed sizes (no dynamic allocation).
+- Nested arrays are laid out as arrays of inner arrays; memory is contiguous at the inner-array granularity (and for built-in types the whole storage is contiguous).
+- operator[] returns references to the inner arrays or element values, enabling natural indexing like a[i][j][k].
+- Uses template non-type parameters for sizes (size_t), so sizes are compile-time constants.
+
+Bugs, correctness problems and surprising behavior
+1. D template parameter is unused in A1D
+   - A1D has template parameter int D = 1 but never uses it. Derived classes pass D to the base (e.g. A2D : A1D<...,D>) but because A1D doesn't use D, dim() always returns 1 (A1D's m_dim).
+   - Result: RangeException(dim(),...) in A1D::operator[] will always report dimension 1 even for A2D/A3D/A4D.
+
+2. dim() is non-virtual and m_dim hides base member
+   - Derived classes define their own m_dim and dim() method. But A1D::operator[] calls dim() as an unqualified call inside A1D, which binds to A1D::dim() at compile time. Even if you made dim() virtual, m_dim is per-class storage; the current approach is confusing and error prone. Prefer compile-time constants for dimension (the D parameter) or make dim() constexpr/static.
+
+3. Bounds checking is incomplete and confusing
+   - operator[] checks only if (i >= size). It does not explicitly check lower bound; negative i is an int parameter but will be converted in the comparison to size_t (unsigned), making a negative i appear as a huge value and thus be caught — but this implicit signed/unsigned conversion is brittle and confusing.
+   - begin() and end() are misleading: begin() returns 0 (good), but end() returns high (size-1). In common C++ conventions, end() should be past-the-end (one past last) if you intend to mimic iterator semantics. The current names are misleading.
+
+4. No const overloads
+   - operator[] is non-const only. You cannot index from a const-qualified array.
+
+5. Throwing RangeException by value with no std::exception integration
+   - RangeException is a plain class with public data members and no what(). It doesn't derive from std::exception/std::out_of_range; this makes it less useful for standard exception handling.
+
+6. Header hygiene and style problems
+   - using namespace std; in a header — bad practice.
+   - #include <iostream> in a header though iostream isn't used — unnecessary heavy include.
+   - No include guard or #pragma once.
+   - File uses in-class member initializers (C++11) but nothing documents required standard.
+   - Names like begin/end may conflict with other code or expectations.
+
+7. Minor style/positioning issues
+   - Members are public by default (RangeException public fields), no const correctness for begin/end/dim, and no documentation.
+
+Potential improvements (recommendations)
+- Use D (template int parameter) properly: set A1D's dim to D (e.g. static constexpr int dim_v = D) so dim() returns correct compile-time dimension.
+- Prefer static constexpr int dim_v = D and make dim() constexpr and non-virtual. This avoids runtime polymorphism entirely and is the natural compile-time approach.
+- Add const and non-const operator[] overloads, and take size_t index parameter to avoid signed/unsigned surprises.
+- Provide size() returning number of elements and last_index()/first_index() or start/stop naming that doesn't conflict with standard begin/end iterator semantics. If you want iterator-like semantics, provide real iterator types.
+- Implement RangeException deriving from std::out_of_range and provide a descriptive what() message (use <sstream> to build it).
+- Add include guard (#pragma once) and remove using namespace std from header; include only required headers (e.g. <stdexcept>, <string>, <sstream>).
+- Consider a more generic implementation using variadic templates (C++11+) to support arbitrary dimensions instead of separate A2D/A3D/A4D types.
+- Consider adding constexpr size() and dim() so they can be used in compile-time contexts.
+- Add unit tests / examples showing usage.
+
+Suggested corrected/modernized header
+- Below is an upgraded version that addresses the main issues: uses the D template parameter, provides const overloads, safer bounds checks, a RangeException that derives from std::out_of_range, removes using namespace std, and adds include guard.
+
+```c++ name=SafeMultiD_Array_BasedOnCUJArticle.h
+#pragma once
+// SafeMultiD_Array_BasedOnCUJArticle.h
+// Modernized, fixed-size multi-dimensional arrays based on the CUJ article design.
+// Requires C++11 or later.
+
+#include <stdexcept>
+#include <string>
+#include <sstream>
+#include <cstddef>
+
+class RangeException : public std::out_of_range {
+public:
+    RangeException(int dim, int low, int high, int index)
+        : std::out_of_range(build_msg(dim, low, high, index)),
+          m_dim(dim), m_low(low), m_high(high), m_index(index) {}
+
+    int dim() const noexcept { return m_dim; }
+    int low() const noexcept { return m_low; }
+    int high() const noexcept { return m_high; }
+    int index() const noexcept { return m_index; }
+
+private:
+    static std::string build_msg(int dim, int low, int high, int index) {
+        std::ostringstream oss;
+        oss << "Index " << index << " out of range [" << low << "," << high
+            << "] for dimension " << dim;
+        return oss.str();
+    }
+
+    int m_dim, m_low, m_high, m_index;
+};
+
+template <class Type, std::size_t Size, int D = 1>
+class A1D {
+public:
+    static_assert(Size > 0, "Size must be > 0");
+    static constexpr std::size_t size_v = Size;
+    static constexpr int dim_v = D;
+    using value_type = Type;
+    using reference = Type&;
+    using const_reference = const Type&;
+
+    // element access
+    reference operator[](std::size_t i) {
+        if (i >= size_v) throw RangeException(dim_v, 0, static_cast<int>(size_v) - 1, static_cast<int>(i));
+        return element[i];
+    }
+    const_reference operator[](std::size_t i) const {
+        if (i >= size_v) throw RangeException(dim_v, 0, static_cast<int>(size_v) - 1, static_cast<int>(i));
+        return element[i];
+    }
+
+    // size and dimension information
+    static constexpr std::size_t size() noexcept { return size_v; }
+    static constexpr int dim() noexcept { return dim_v; }
+    static constexpr int first_index() noexcept { return 0; }
+    static constexpr int last_index() noexcept { return static_cast<int>(size_v) - 1; }
+
+private:
+    Type element[size_v];
+};
+
+// 2D, 3D, 4D wrappers using the A1D nesting approach.
+// Note: we pass the same D down to the nested A1D so base's dim_v is correct.
+template <class Type, std::size_t Size1, std::size_t Size2, int D = 2>
+class A2D : public A1D< A1D<Type, Size2, D>, Size1, D > {
+public:
+    using base_t = A1D< A1D<Type, Size2, D>, Size1, D >;
+    using base_t::base_t; // inherit constructors (default)
+};
+
+template <class Type, std::size_t Size1, std::size_t Size2, std::size_t Size3, int D = 3>
+class A3D : public A1D< A2D<Type, Size2, Size3, D>, Size1, D > {
+public:
+    using base_t = A1D< A2D<Type, Size2, Size3, D>, Size1, D >;
+    using base_t::base_t;
+};
+
+template <class Type, std::size_t Size1, std::size_t Size2, std::size_t Size3, std::size_t Size4, int D = 4>
+class A4D : public A1D< A3D<Type, Size2, Size3, Size4, D>, Size1, D > {
+public:
+    using base_t = A1D< A3D<Type, Size2, Size3, Size4, D>, Size1, D >;
+    using base_t::base_t;
+};
+```
+
+Short usage example
+- A2D<double, 3, 4> a; // 3 x 4 array
+- a[0][1] = 3.14;      // sets element (0,1)
+- constexpr int dims = A2D<double,3,4>::dim_v; // dims == 2
+- a[3][0] will throw RangeException (out of range)
+
+Notes / next steps
+- If you want true iterator support and standard begin()/end() semantics, add iterator types (or provide data() and use pointer arithmetic).
+- For arbitrary N dimensions, consider a variadic-template design returning a single contiguous storage buffer and doing index flattening (this yields contiguous storage at the element level and simpler strides management).
+- If you keep the nested-A1D approach, emphasize that storage is contiguous for built-in element types across the whole N-dim array (because inner arrays are simple aggregates placed consecutively), but a flattened single-buffer approach may be more flexible for stride/padding control.
+
+If you want, I can:
+- Provide a variadic-template implementation (flattened contiguous storage with runtime/compile-time index checks).
+- Prepare unit tests and small usage examples.
+- Open a PR with the corrected header in your repository.
