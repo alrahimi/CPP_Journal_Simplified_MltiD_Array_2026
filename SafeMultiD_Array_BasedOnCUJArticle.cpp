@@ -2,9 +2,11 @@
 #include <cstdio>
 #include "SafeMultiD_Array_BasedOnCUJArticle.h"
 
-int main()
-{
+int main() {
     try {
+        // ---------------------------------------------------------
+        // Existing tests (unchanged)
+        // ---------------------------------------------------------
         A1D<int,10> va1d;
         va1d[2] = 20;
 
@@ -16,15 +18,15 @@ int main()
 
         // get dims and bounds
         int dim1 = va3d.dim();
-        std::size_t low1  = va3d.begin();
+        std::size_t low1 = va3d.begin();
         std::size_t high1 = va3d.end();
 
         int dim2 = va3d[low1].dim();
-        std::size_t low2  = va3d[low1].begin();
+        std::size_t low2 = va3d[low1].begin();
         std::size_t high2 = va3d[low1].end();
 
         int dim3 = va3d[low1][low2].dim();
-        std::size_t low3  = va3d[low1][low2].begin();
+        std::size_t low3 = va3d[low1][low2].begin();
         std::size_t high3 = va3d[low1][low2].end();
 
         std::printf("dim1=%d dim2=%d dim3=%d\n", dim1, dim2, dim3);
@@ -45,13 +47,25 @@ int main()
                         std::printf("%zu %zu %zu != %d\n", i, j, k, va3d[i][j][k]);
                 }
 
-        std::puts("\nend");
+        std::puts("\nend of existing tests");
+
+        // ---------------------------------------------------------
+        // NEW TEST: Out-of-range exception test
+        // ---------------------------------------------------------
+        std::puts("\nStarting out-of-range test...");
+
+        A3D<int, 2, 3, 4> test3d;
+
+        // This will be caught by the *outer* catch below
+        test3d[0][0][5] = 123;
+
         return 0;
     }
     catch (const RangeException& RE) {
-        // Print the message and the stored fields
-        std::printf("%s\n", RE.what());
-        std::printf("dim=%zu index=%zu range=[%zu:%zu]\n", RE.dim, RE.index, RE.low, RE.high);
+        std::printf("Caught RangeException:\n");
+        std::printf("  what(): %s\n", RE.what());
+        std::printf("  dim=%zu index=%zu range=[%zu:%zu]\n",
+                    RE.dim, RE.index, RE.low, RE.high);
         return 1;
     }
 }
