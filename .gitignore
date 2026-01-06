@@ -1,0 +1,12 @@
+# Compiled executables
+SafeMultiD_Array_BasedOnCUJArticle
+*.out
+*.exe
+
+# Object files
+*.o
+*.obj
+
+# Build directories
+build/
+bin/
