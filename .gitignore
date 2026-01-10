@@ -1,0 +1,17 @@
+# Compiled binaries
+SafeMultiD_Array
+UnitTests
+
+# Object files
+*.o
+*.obj
+
+# Compiled executables
+*.exe
+*.out
+*.app
+
+# Temporary files
+*.tmp
+*~
+.*.swp
