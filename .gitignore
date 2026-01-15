@@ -1,6 +1,7 @@
 # Compiled executables
 test
 unittest
+SafeMultiD_Array_BasedOnCUJArticle
 
 # Object files
 *.o
