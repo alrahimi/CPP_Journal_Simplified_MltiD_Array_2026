@@ -47,6 +47,9 @@ public:
 
     constexpr std::size_t first_index() const noexcept { return 0; }
     constexpr std::size_t last_index() const noexcept { return (Size == 0 ? 0 : Size - 1); }
+    
+    constexpr std::size_t begin() const noexcept { return first_index(); }
+    constexpr std::size_t end() const noexcept { return last_index(); }
 
     reference operator[](std::size_t i) {
         if (i >= Size)
