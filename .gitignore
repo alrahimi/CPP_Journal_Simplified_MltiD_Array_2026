@@ -1,0 +1,11 @@
+# Compiled executables
+test
+unittest
+
+# Object files
+*.o
+*.obj
+
+# Executable extensions
+*.exe
+*.out
