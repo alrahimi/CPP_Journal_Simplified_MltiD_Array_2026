@@ -1,0 +1,9 @@
+# Compiled executables
+SafeMultiD_Array_Program
+*.o
+*.exe
+*.out
+
+# Build directories
+build/
+bin/
