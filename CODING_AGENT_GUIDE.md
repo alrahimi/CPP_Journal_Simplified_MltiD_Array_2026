@@ -221,7 +221,7 @@ This repository implements **safe multidimensional arrays** based on a C++ Journ
 ### Design Patterns Used
 - Template metaprogramming for compile-time array dimensions
 - Exception handling for runtime bounds checking
-- Nested template inheritance (A2D inherits from A1D, etc.)
+- Nested template inheritance (A2D contains nested A1D instances, A3D contains A2D, etc.)
 
 ## Additional Resources
 
