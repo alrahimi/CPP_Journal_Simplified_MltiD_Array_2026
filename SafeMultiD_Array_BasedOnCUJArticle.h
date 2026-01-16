@@ -37,6 +37,8 @@ struct RangeException : public std::out_of_range {
 // ===============================================================
 template <typename Type, std::size_t Size, int D = 1>
 class A1D {
+    static_assert(Size > 0, "Array dimension size must be greater than zero");
+
 public:
     using value_type = Type;
     using reference = Type&;
@@ -46,10 +48,11 @@ public:
     static constexpr int dim() noexcept { return D; }
 
     constexpr std::size_t first_index() const noexcept { return 0; }
-    constexpr std::size_t last_index() const noexcept { return (Size == 0 ? 0 : Size - 1); }
-    
+    constexpr std::size_t last_index() const noexcept { return Size - 1; }
+
+    // STL-consistent index range helpers
     constexpr std::size_t begin() const noexcept { return first_index(); }
-    constexpr std::size_t end() const noexcept { return last_index(); }
+    constexpr std::size_t end() const noexcept { return Size; }
 
     reference operator[](std::size_t i) {
         if (i >= Size)
@@ -88,7 +91,8 @@ public:
 //   arr[i][j]     → dim = 2
 //   arr[i][j][k]  → dim = 3
 // ===============================================================
-template <typename Type, std::size_t size_1, std::size_t size_2, std::size_t size_3>
+template <typename Type,
+          std::size_t size_1, std::size_t size_2, std::size_t size_3>
 class A3D : public A1D<A2D<Type, size_2, size_3>, size_1, 1> {
 public:
     static constexpr int Dim = 3;
@@ -115,4 +119,3 @@ public:
     static constexpr std::size_t Size3 = s3;
     static constexpr std::size_t Size4 = s4;
 };
-
