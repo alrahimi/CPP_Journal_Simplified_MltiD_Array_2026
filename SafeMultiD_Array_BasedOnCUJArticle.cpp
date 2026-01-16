@@ -18,33 +18,38 @@ int main() {
 
         // get dims and bounds
         int dim1 = va3d.dim();
-        std::size_t low1 = va3d.begin();
+        std::size_t low1  = va3d.begin();
         std::size_t high1 = va3d.end();
 
         int dim2 = va3d[low1].dim();
-        std::size_t low2 = va3d[low1].begin();
+        std::size_t low2  = va3d[low1].begin();
         std::size_t high2 = va3d[low1].end();
 
         int dim3 = va3d[low1][low2].dim();
-        std::size_t low3 = va3d[low1][low2].begin();
+        std::size_t low3  = va3d[low1][low2].begin();
         std::size_t high3 = va3d[low1][low2].end();
 
         std::printf("dim1=%d dim2=%d dim3=%d\n", dim1, dim2, dim3);
         std::printf("dim: %dX%dX%d\n", dim1, dim2, dim3);
 
+        // ---------------------------------------------------------
         // Fill values
-        for (std::size_t i = low1; i <= high1; ++i)
-            for (std::size_t j = low2; j <= high2; ++j)
-                for (std::size_t k = low3; k <= high3; ++k)
+        // ---------------------------------------------------------
+        for (std::size_t i = low1; i < high1; ++i)
+            for (std::size_t j = low2; j < high2; ++j)
+                for (std::size_t k = low3; k < high3; ++k)
                     va3d[i][j][k] = static_cast<int>((i * 100 + j) * 100 + k);
 
+        // ---------------------------------------------------------
         // Validate values
-        for (std::size_t i = low1; i <= high1; ++i)
-            for (std::size_t j = low2; j <= high2; ++j)
-                for (std::size_t k = low3; k <= high3; ++k) {
+        // ---------------------------------------------------------
+        for (std::size_t i = low1; i < high1; ++i)
+            for (std::size_t j = low2; j < high2; ++j)
+                for (std::size_t k = low3; k < high3; ++k) {
                     int expected = static_cast<int>((i * 100 + j) * 100 + k);
                     if (va3d[i][j][k] != expected)
-                        std::printf("%zu %zu %zu != %d\n", i, j, k, va3d[i][j][k]);
+                        std::printf("%zu %zu %zu != %d\n",
+                                    i, j, k, va3d[i][j][k]);
                 }
 
         std::puts("\nend of existing tests");
